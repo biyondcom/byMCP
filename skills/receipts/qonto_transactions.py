@@ -103,8 +103,8 @@ class QontoTransactionClient:
             "bank_account_id": self._bank_account_id,
             "status[]": "completed",
             "side": side,
-            "emitted_at_period[started_at]": emitted_at_from,
-            "emitted_at_period[finished_at]": emitted_at_to,
+            "emitted_at_from": emitted_at_from,
+            "emitted_at_to": emitted_at_to,
             "per_page": 100,
         }
 

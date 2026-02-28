@@ -211,8 +211,8 @@ def register_tools(mcp: "FastMCP") -> None:
             return f"Qonto-Konfigurationsfehler: {exc}"
 
         now = datetime.now(timezone.utc)
-        date_from = (now - timedelta(days=days_back)).strftime("%Y-%m-%d")
-        date_to = now.strftime("%Y-%m-%d")
+        date_from = (now - timedelta(days=days_back)).strftime("%Y-%m-%dT00:00:00.000Z")
+        date_to = now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
         transactions = qonto.get_transactions_without_receipts(date_from, date_to)
         if not transactions:
