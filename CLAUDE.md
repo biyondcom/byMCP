@@ -7,17 +7,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **byMCP** is a central MCP (Model Context Protocol) server for biyond workflows.
 It exposes domain-specific tools as MCP tools that Claude can call directly.
 
+## Requirements
+
+- **Python ≥ 3.10** (the `mcp` package requires it). Install from https://www.python.org/downloads/
+
 ## Commands
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (use py -3.12 on Windows if 3.8 is still the default)
+py -3.12 -m pip install -r requirements.txt
 
 # Run the MCP server (stdio transport – used by Claude Code)
-python server.py
+py -3.12 server.py
 
 # Register with Claude Code (run once)
-claude mcp add byMCP -- python C:/Users/Micha/claude/byMCP/server.py
+claude mcp add byMCP -- py -3.12 C:/Users/Micha/claude/byMCP/server.py
 
 # Copy and fill in credentials
 cp .env.example .env

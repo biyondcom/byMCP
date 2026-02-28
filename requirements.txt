@@ -1,4 +1,4 @@
-# MCP Server
+# MCP Server – requires Python >= 3.10
 mcp[cli]>=1.0.0
 
 # PDF processing
