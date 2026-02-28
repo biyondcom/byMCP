@@ -78,9 +78,9 @@ class SharePointClient:
             "Content-Type": "application/json",
         }
 
-    def _get(self, path: str) -> dict:
+    def _get(self, path: str, params: Optional[dict] = None) -> dict:
         url = f"{_GRAPH_BASE}/{path.lstrip('/')}"
-        resp = requests.get(url, headers=self._headers(), timeout=_TIMEOUT)
+        resp = requests.get(url, headers=self._headers(), params=params, timeout=_TIMEOUT)
         if resp.status_code == 401:
             raise MsAuthError(
                 "MS Graph: Autorisierung abgelaufen. Bitte 'receipts_authorize' aufrufen."
@@ -157,6 +157,42 @@ class SharePointClient:
             "SharePoint list '%s': %d writable columns discovered.", list_name, len(columns)
         )
         return columns
+
+    def list_items(
+        self,
+        list_name: str,
+        top: int = 10,
+        order_by: str = "createdDateTime desc",
+        select_fields: Optional[list] = None,
+    ) -> list[dict]:
+        """
+        List items from a SharePoint list.
+
+        Returns list of field dicts (system fields stripped).
+        """
+        site_id = self._resolve_site_id()
+        params: dict = {
+            "$expand": "fields",
+            "$top": str(top),
+            "$orderby": order_by,
+        }
+        if select_fields:
+            params["$select"] = ",".join(select_fields)
+
+        data = self._get(f"/sites/{site_id}/lists/{list_name}/items", params=params)
+        result = []
+        for item in data.get("value", []):
+            fields = {
+                k: v
+                for k, v in item.get("fields", {}).items()
+                if not k.startswith("@") and not k.startswith("_") and k not in {
+                    "Edit", "LinkTitleNoMenu", "LinkTitle",
+                    "ItemChildCount", "FolderChildCount",
+                    "ContentType", "Attachments",
+                }
+            }
+            result.append(fields)
+        return result
 
     def create_item(self, list_name: str, fields: dict) -> int:
         """

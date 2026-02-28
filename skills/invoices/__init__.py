@@ -29,6 +29,65 @@ _PENDING_FILE = Path.home() / ".byMCP" / "pending_invoice.json"
 def register_tools(mcp: "FastMCP") -> None:
 
     @mcp.tool()
+    def invoice_list(limit: int = 10) -> str:
+        """
+        Listet die zuletzt erstellten Rechnungen aus der SharePoint-Liste.
+
+        Args:
+            limit: Maximale Anzahl Rechnungen (Standard: 10).
+        """
+        from skills.invoices.sharepoint_client import SharePointClient, SharePointError
+        from skills.receipts.ms_oauth import MsAuthError
+
+        site_url     = os.getenv("SHAREPOINT_SITE_URL", "").strip()
+        invoices_list = os.getenv("SHAREPOINT_INVOICES_LIST", "Rechnungen").strip()
+        client_id    = os.getenv("MS_CLIENT_ID", "").strip()
+        tenant_id    = os.getenv("MS_TENANT_ID", "common").strip()
+
+        if not site_url:
+            return "SHAREPOINT_SITE_URL fehlt in .env."
+        if not client_id:
+            return "MS_CLIENT_ID fehlt in .env."
+
+        try:
+            sp = SharePointClient(site_url, client_id, tenant_id)
+            items = sp.list_items(invoices_list, top=limit)
+        except MsAuthError as exc:
+            return f"Autorisierungsfehler: {exc}\nBitte 'receipts_authorize' aufrufen."
+        except SharePointError as exc:
+            if exc.status_code == 403:
+                return "Zugriff verweigert (403). Sites.ReadWrite.All in Azure prüfen."
+            if exc.status_code == 404:
+                return f"Liste '{invoices_list}' nicht gefunden. SHAREPOINT_INVOICES_LIST prüfen."
+            return f"SharePoint-Fehler: {exc}"
+
+        if not items:
+            return f"Keine Einträge in '{invoices_list}' gefunden."
+
+        # Interessante Felder in sinnvoller Reihenfolge
+        _SHOW = [
+            "id", "Title", "Rechnungsnummer", "Firma", "Lieferant",
+            "Rechnungsdatum", "Nettosumme", "Nettobetrag", "Bruttobetrag",
+            "Status", "Berater", "Kundennummer", "Bestellnr_x002e_",
+            "Titel", "Modified", "Created",
+        ]
+
+        lines = [f"Rechnungen ({len(items)} Einträge)\n" + "─" * 50]
+        for item in items:
+            lines.append("")
+            for key in _SHOW:
+                val = item.get(key)
+                if val is not None and val != "" and val is not False:
+                    lines.append(f"  {key:<20} {val}")
+            # Zeige unbekannte Felder die nicht in _SHOW sind
+            for key, val in item.items():
+                if key not in _SHOW and val not in (None, "", False):
+                    lines.append(f"  {key:<20} {val}")
+            lines.append("─" * 50)
+
+        return "\n".join(lines)
+
+    @mcp.tool()
     def invoice_extract(
         pdf_path: Optional[str] = None,
         message_id: Optional[str] = None,
