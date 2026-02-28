@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from datetime import datetime
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -10,10 +12,6 @@ if TYPE_CHECKING:
 
 def register_tools(mcp: "FastMCP") -> None:
     """Register all payroll tools with the given FastMCP instance."""
-    from datetime import datetime
-    from pathlib import Path
-    from typing import Optional
-
     from skills.payroll.csv_parser import parse_csv
     from skills.payroll.idempotency import (
         is_already_processed,
