@@ -23,6 +23,7 @@ from typing import Optional
 import requests
 
 _TOKEN_FILE = Path.home() / ".byMCP" / "ms_tokens.json"
+_FLOW_FILE = Path.home() / ".byMCP" / "ms_device_flow.json"
 _GRAPH_SCOPE = "https://graph.microsoft.com/Mail.Read offline_access"
 _TIMEOUT = 30
 
@@ -181,3 +182,28 @@ def needs_authorization(client_id: str, tenant_id: str) -> bool:
 def clear_tokens() -> None:
     if _TOKEN_FILE.exists():
         _TOKEN_FILE.unlink()
+
+
+# ------------------------------------------------------------------
+# Pending device flow persistence
+# ------------------------------------------------------------------
+
+def save_pending_flow(flow: dict) -> None:
+    """Persist a started device code flow so it can be polled later."""
+    _FLOW_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _FLOW_FILE.write_text(json.dumps(flow, indent=2), encoding="utf-8")
+
+
+def load_pending_flow() -> Optional[dict]:
+    """Load a previously started device code flow, or None if none exists."""
+    if _FLOW_FILE.exists():
+        try:
+            return json.loads(_FLOW_FILE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    return None
+
+
+def clear_pending_flow() -> None:
+    if _FLOW_FILE.exists():
+        _FLOW_FILE.unlink()

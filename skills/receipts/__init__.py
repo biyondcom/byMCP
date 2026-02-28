@@ -90,10 +90,10 @@ def register_tools(mcp: "FastMCP") -> None:
     @mcp.tool()
     def receipts_authorize() -> str:
         """
-        Autorisiert den Zugriff auf das Microsoft Office 365 Konto via Device Code Flow.
+        Startet die Microsoft Office 365 Autorisierung via Device Code Flow.
 
-        Zeigt einen Code an, den du unter https://microsoft.com/devicelogin eingibst.
-        Dieses Tool wartet bis zu 15 Minuten auf die Bestätigung.
+        Gibt sofort einen Code und eine URL zurück. Der Benutzer öffnet die URL
+        und gibt den Code ein. Danach receipts_authorize_complete aufrufen.
 
         Muss nur einmal ausgeführt werden – Token werden danach automatisch erneuert.
         """
@@ -111,35 +111,69 @@ def register_tools(mcp: "FastMCP") -> None:
             )
 
         from skills.receipts.ms_oauth import (
+            clear_pending_flow,
             initiate_device_code_flow,
             needs_authorization,
-            poll_device_code,
+            save_pending_flow,
         )
 
         if not needs_authorization(client_id, tenant_id):
             return "Bereits autorisiert. Token ist gueltig."
 
         flow = initiate_device_code_flow(client_id, tenant_id)
-        user_code = flow.get("user_code", "")
-        url = flow.get("verification_uri", "https://microsoft.com/devicelogin")
-        message = flow.get("message", "")
-        expires = flow.get("expires_in", 900)
-        interval = flow.get("interval", 5)
-        device_code = flow.get("device_code", "")
+        save_pending_flow({
+            "client_id": client_id,
+            "tenant_id": tenant_id,
+            "device_code": flow["device_code"],
+            "interval": flow.get("interval", 5),
+            "expires_in": flow.get("expires_in", 900),
+        })
 
-        # The tool blocks here while the user authenticates in their browser
-        poll_device_code(
-            client_id=client_id,
-            tenant_id=tenant_id,
-            device_code=device_code,
-            interval=interval,
-            expires_in=expires,
-        )
+        url = flow.get("verification_uri", "https://microsoft.com/devicelogin")
+        user_code = flow.get("user_code", "")
         return (
-            f"Autorisierung erfolgreich!\n\n"
-            f"(Hinweis: Bitte oeffne {url} und gib den Code {user_code} ein,\n"
-            f"falls du noch nicht autorisiert hast.)"
+            f"Bitte oeffne diese URL und gib den Code ein:\n\n"
+            f"  URL:  {url}\n"
+            f"  Code: {user_code}\n\n"
+            f"Danach 'receipts_authorize_complete' aufrufen."
         )
+
+    @mcp.tool()
+    def receipts_authorize_complete() -> str:
+        """
+        Wartet auf die Bestätigung des Microsoft Device Code Flows.
+
+        Muss nach receipts_authorize aufgerufen werden, nachdem der Benutzer
+        den Code unter https://microsoft.com/devicelogin eingegeben hat.
+        Wartet bis zu 15 Minuten auf die Bestätigung.
+        """
+        from skills.receipts.ms_oauth import (
+            clear_pending_flow,
+            load_pending_flow,
+            poll_device_code,
+        )
+
+        flow = load_pending_flow()
+        if not flow:
+            return (
+                "Kein laufender Autorisierungsvorgang gefunden.\n"
+                "Bitte zuerst 'receipts_authorize' aufrufen."
+            )
+
+        try:
+            poll_device_code(
+                client_id=flow["client_id"],
+                tenant_id=flow["tenant_id"],
+                device_code=flow["device_code"],
+                interval=flow.get("interval", 5),
+                expires_in=flow.get("expires_in", 900),
+            )
+        except Exception as exc:
+            clear_pending_flow()
+            return f"Autorisierung fehlgeschlagen: {exc}"
+
+        clear_pending_flow()
+        return "Autorisierung erfolgreich! Office 365 Token gespeichert."
 
     # ------------------------------------------------------------------
 
