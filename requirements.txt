@@ -1,0 +1,12 @@
+# MCP Server
+mcp[cli]>=1.0.0
+
+# PDF processing
+pdfplumber>=0.10.3
+pypdf>=4.0.0
+
+# HTTP client
+requests>=2.31.0
+
+# Environment / config
+python-dotenv>=1.0.0
