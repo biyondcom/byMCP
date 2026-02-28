@@ -75,7 +75,6 @@ class GraphClient:
             "$filter": filter_str,
             "$select": "id,subject,from,receivedDateTime,bodyPreview",
             "$top": min(max_results, 100),
-            "$orderby": "receivedDateTime desc",
         }
 
         while len(messages) < max_results:
