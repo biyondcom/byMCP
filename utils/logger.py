@@ -16,9 +16,9 @@ class _MaskingFilter(logging.Filter):
         record.msg = _mask(str(record.msg))
         if record.args:
             if isinstance(record.args, dict):
-                record.args = {k: _mask(str(v)) for k, v in record.args.items()}
+                record.args = {k: (_mask(v) if isinstance(v, str) else v) for k, v in record.args.items()}
             else:
-                record.args = tuple(_mask(str(a)) for a in record.args)
+                record.args = tuple((_mask(a) if isinstance(a, str) else a) for a in record.args)
         return True
 
 
