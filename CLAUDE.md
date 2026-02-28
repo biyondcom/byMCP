@@ -40,6 +40,28 @@ utils/
   iban_validator.py         # MOD-97 validation
 ```
 
+## Receipts Skill – MCP Tools
+
+| Tool | Description |
+|---|---|
+| `receipts_authorize` | Einmalige MS Office 365 Autorisierung via Device Code Flow (blockiert bis Code eingegeben) |
+| `receipts_find_candidates` | Qonto-Transaktionen ohne Beleg + passende Mails mit Score-Ranking |
+| `receipts_attach` | E-Mail-Anhang herunterladen und an Qonto-Transaktion anhängen |
+
+**Workflow:**
+1. `receipts_authorize` (einmalig) → gibt Code + URL aus, User gibt Code auf microsoft.com/devicelogin ein
+2. `receipts_find_candidates(days_back=60)` → listet Transaktionen + Top-3 Mail-Kandidaten mit Score
+3. Claude zeigt Ergebnisse, fragt Benutzer: "Ist Kandidat [1] für Transaktion X korrekt?"
+4. `receipts_attach(transaction_id, message_id, attachment_id)` → lädt Anhang herunter + hängt an Qonto an
+
+**Matching-Score (0–100%):**
+- Betrag im Mail-Betreff oder Body Preview gefunden: +50%
+- Label-Wörter (>3 Zeichen) im Absender: +30%
+- Label-Wörter im Betreff: +20%
+
+**Env vars:** `MS_CLIENT_ID`, `MS_TENANT_ID` (default: "common")
+**Token-Cache:** `~/.byMCP/ms_tokens.json`
+
 ## Adding a New Skill
 
 1. Create `skills/<skill_name>/__init__.py` with `register_tools(mcp: FastMCP) -> None`
