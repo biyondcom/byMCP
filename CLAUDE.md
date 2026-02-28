@@ -39,10 +39,35 @@ skills/
     qonto_client.py         # Qonto v2 REST client: VOP + SEPA transfers + SCA polling
     qonto_oauth.py          # OAuth2 authorization code flow, token cache at ~/.byMCP/
     idempotency.py          # SQLite store at ~/.byMCP/idempotency.db
+  invoices/
+    __init__.py             # register_tools(mcp) – invoice_extract, invoice_import
+    pdf_extractor.py        # pdfplumber extraction: regex header fields + table positions
+    sharepoint_client.py    # Graph API SharePoint client: site resolution, column discovery, item creation
 utils/
   logger.py                 # Rotating file logger + IBAN masking filter
   iban_validator.py         # MOD-97 validation
 ```
+
+## Invoices Skill – MCP Tools
+
+| Tool | Description |
+|---|---|
+| `invoice_extract` | PDF einlesen (lokal oder E-Mail-Anhang), Kopf- und Positionsdaten extrahieren, Vorschau anzeigen |
+| `invoice_import` | Extrahierte Rechnung in zwei SharePoint-Listen importieren (Kopf + Positionen via Lookup) |
+
+**Workflow:**
+1. `receipts_authorize` (einmalig, nach Azure-Konfiguration mit `Sites.ReadWrite.All`)
+2. `invoice_extract(pdf_path="/pfad/zu/rechnung.pdf")` → Vorschau prüfen
+3. `invoice_import()` → SharePoint-Items in Rechnungen + Rechnungspositionen erstellen
+
+**Scope-Anforderung:** `Sites.ReadWrite.All` (delegiert) in der Azure App-Registrierung.
+Nach Hinzufügen: `~/.byMCP/ms_tokens.json` löschen und neu autorisieren.
+
+**Env vars:** `SHAREPOINT_SITE_URL`, `SHAREPOINT_INVOICES_LIST`, `SHAREPOINT_POSITIONS_LIST`
+**Pending state:** `~/.byMCP/pending_invoice.json` (wird nach erfolgreichem Import gelöscht)
+
+**Lookup-Spalte:** `sharepoint_client.py` erkennt Lookup-Spalten automatisch via `col.get("lookup")`.
+Beim Schreiben von Positionen wird `{internal_name}LookupId = header_item_id` gesetzt.
 
 ## Receipts Skill – MCP Tools
 

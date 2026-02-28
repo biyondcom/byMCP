@@ -24,7 +24,7 @@ import requests
 
 _TOKEN_FILE = Path.home() / ".byMCP" / "ms_tokens.json"
 _FLOW_FILE = Path.home() / ".byMCP" / "ms_device_flow.json"
-_GRAPH_SCOPE = "https://graph.microsoft.com/Mail.Read offline_access"
+_GRAPH_SCOPE = "https://graph.microsoft.com/Mail.Read Sites.ReadWrite.All offline_access"
 _TIMEOUT = 30
 
 

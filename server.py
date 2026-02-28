@@ -29,7 +29,8 @@ mcp = FastMCP(
     instructions=(
         "Zentraler MCP Server für biyond Workflows. "
         "Skills: payroll (Lohnzettelverarbeitung & Qonto-Überweisungen), "
-        "receipts (automatische Belegzuordnung via Office 365 & Qonto). "
+        "receipts (automatische Belegzuordnung via Office 365 & Qonto), "
+        "invoices (Rechnungsextraktion & SharePoint-Import). "
         "Alle Pfadangaben müssen absolute Pfade sein."
     ),
 )
@@ -37,9 +38,11 @@ mcp = FastMCP(
 # ── Skills registrieren ────────────────────────────────────────────────
 from skills.payroll import register_tools as _payroll    # noqa: E402
 from skills.receipts import register_tools as _receipts  # noqa: E402
+from skills.invoices import register_tools as _invoices  # noqa: E402
 
 _payroll(mcp)
 _receipts(mcp)
+_invoices(mcp)
 
 # ── Einstiegspunkt ─────────────────────────────────────────────────────
 if __name__ == "__main__":
